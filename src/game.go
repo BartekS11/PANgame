@@ -4,83 +4,60 @@ import (
 	"fmt"
 	"image/color"
 
+	"github.com/BartekS11/PANgame/constants"
+	"github.com/BartekS11/PANgame/entities"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 var (
-	CardSizeX   = (822.0 / 15.0)
-	CardSizeY   = (1122.0 / 15.0)
+	CardSizeX   = (822.0 / 5.0)
+	CardSizeY   = (1122.0 / 5.0)
 	IsDebugMode = false
 )
 
 type Game struct {
 	rectImage                     *ebiten.Image
-	rectX, rectY                  float64 // Rectangle position
+	rectX, rectY                  float64
 	gridCols, gridRows            int
 	gridCellWidth, gridCellHeight float64
-	isDragging                    bool
+	cardEntities                  *entities.Card
 }
 
 func (g *Game) Update() error {
 	if inpututil.IsKeyJustPressed(ebiten.KeyF4) {
 		IsDebugMode = !IsDebugMode
 	}
-	mouseX, mouseY := ebiten.CursorPosition()
-	mousePressed := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
 
-	if mousePressed {
-		if !g.isDragging {
-			// Check if the click is inside the rectangle to start dragging
-			if float64(mouseX) >= g.rectX && float64(mouseX) <= g.rectX+float64(g.rectImage.Bounds().Dx()) &&
-				float64(mouseY) >= g.rectY && float64(mouseY) <= g.rectY+float64(g.rectImage.Bounds().Dy()) {
-				g.isDragging = true
-			}
-		}
-		if g.isDragging {
-			// Update rectangle position to follow the mouse
-			g.rectX = float64(mouseX) - float64(g.rectImage.Bounds().Dx())/2
-			g.rectY = float64(mouseY) - float64(g.rectImage.Bounds().Dy())/2
-		}
-	} else {
-		// Stop dragging when the mouse is released
-		g.isDragging = false
-	}
-
-	// Snap rectangle to the nearest grid cell when not dragging
-	if !g.isDragging {
-		g.rectX = float64(int((g.rectX+g.gridCellWidth/2)/g.gridCellWidth) * int(g.gridCellWidth))
-		g.rectY = float64(int((g.rectY+g.gridCellHeight/2)/g.gridCellHeight) * int(g.gridCellHeight))
-	}
-
+	g.cardEntities.Update()
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	for row := 0; row < g.gridRows; row++ {
-		for col := 0; col < g.gridCols; col++ {
+	for row := range g.gridRows {
+		for col := range g.gridCols {
 			x := float64(col) * g.gridCellWidth
 			y := float64(row) * g.gridCellHeight
-			rect := ebiten.NewImage(int(g.gridCellWidth), int(g.gridCellHeight))
-			rect.Fill(color.RGBA{200, 200, 200, 255}) // Light gray for grid cells
+			rect := ebiten.NewImage(int(g.gridCellWidth)-1, int(g.gridCellHeight)-1)
+			rect.Fill(color.RGBA{200, 200, 200, 255})
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(x, y)
+
 			screen.DrawImage(rect, op)
 		}
 	}
 
-	// Draw the rectangle image onto the screen
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(g.rectX, g.rectY) // Position the rectangle
-	screen.DrawImage(g.rectImage, op)
+	op.GeoM.Translate(g.cardEntities.RectX, g.cardEntities.RectY)
+	screen.DrawImage(g.cardEntities.RectImage, op)
 	if IsDebugMode {
 		debugPrints(screen)
 	}
 }
 
-func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return 320, 240
+func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
+	return constants.ScreenWidth, constants.ScreenHeight
 }
 
 func NewGame() (*Game, error) {
@@ -91,12 +68,19 @@ func NewGame() (*Game, error) {
 		rectImage:      rectImage,
 		rectX:          CardSizeX,
 		rectY:          CardSizeY,
-		gridCols:       4, // Number of columns in the grid
-		gridRows:       3, // Number of rows in the grid
-		gridCellWidth:  20.0,
-		gridCellHeight: 20.0,
-		isDragging:     false,
+		gridCols:       4,
+		gridRows:       3,
+		gridCellWidth:  100.0,
+		gridCellHeight: 100.0,
+		cardEntities:   nil,
 	}
+	g.cardEntities = &entities.Card{
+		RectX:      CardSizeX,
+		RectY:      CardSizeY,
+		RectImage:  rectImage,
+		IsDragging: false,
+	}
+
 	return g, nil
 }
 

@@ -16,3 +16,24 @@ const (
 	Spade
 	Diamond
 )
+
+// Card color
+type CardColor int8
+
+const (
+	Red CardColor = iota
+	Black
+)
+
+// Card type
+type CardType int8
+
+const (
+	Num9 CardType = iota
+	Num10
+
+	Jack
+	Queen
+	King
+	Ace
+)
