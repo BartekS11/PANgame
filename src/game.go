@@ -12,17 +12,15 @@ import (
 )
 
 var (
-	CardSizeX   = (822.0 / 5.0)
-	CardSizeY   = (1122.0 / 5.0)
+	// Keep real life card size reference
+	// CardSizeX   = (822.0 / 5.0)
+	// CardSizeY   = (1122.0 / 5.0)
 	IsDebugMode = false
 )
 
 type Game struct {
-	rectImage                     *ebiten.Image
-	rectX, rectY                  float64
-	gridCols, gridRows            int
-	gridCellWidth, gridCellHeight float64
-	cardEntities                  *entities.Card
+	cardEntities *entities.Card
+	gridEntity   *entities.Grid
 }
 
 func (g *Game) Update() error {
@@ -30,27 +28,15 @@ func (g *Game) Update() error {
 		IsDebugMode = !IsDebugMode
 	}
 
-	g.cardEntities.Update()
+	g.gridEntity.Update()
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	for row := range g.gridRows {
-		for col := range g.gridCols {
-			x := float64(col) * g.gridCellWidth
-			y := float64(row) * g.gridCellHeight
-			rect := ebiten.NewImage(int(g.gridCellWidth)-1, int(g.gridCellHeight)-1)
-			rect.Fill(color.RGBA{200, 200, 200, 255})
-			op := &ebiten.DrawImageOptions{}
-			op.GeoM.Translate(x, y)
+	screen.Fill(color.RGBA{120, 180, 255, 255})
 
-			screen.DrawImage(rect, op)
-		}
-	}
+	g.gridEntity.Draw(screen)
 
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(g.cardEntities.RectX, g.cardEntities.RectY)
-	screen.DrawImage(g.cardEntities.RectImage, op)
 	if IsDebugMode {
 		debugPrints(screen)
 	}
@@ -61,24 +47,13 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func NewGame() (*Game, error) {
-	width, height := int(CardSizeX), int(CardSizeY)
-	rectImage := ebiten.NewImage(width, height)
-	rectImage.Fill(color.RGBA{255, 0, 0, 255})
-	g := &Game{
-		rectImage:      rectImage,
-		rectX:          CardSizeX,
-		rectY:          CardSizeY,
-		gridCols:       4,
-		gridRows:       3,
-		gridCellWidth:  100.0,
-		gridCellHeight: 100.0,
-		cardEntities:   nil,
+	grid, err := entities.LoadGrid()
+	if err != nil {
+		panic(err)
 	}
-	g.cardEntities = &entities.Card{
-		RectX:      CardSizeX,
-		RectY:      CardSizeY,
-		RectImage:  rectImage,
-		IsDragging: false,
+	g := &Game{
+		cardEntities: nil,
+		gridEntity:   grid,
 	}
 
 	return g, nil

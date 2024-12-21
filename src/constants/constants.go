@@ -37,3 +37,9 @@ const (
 	King
 	Ace
 )
+
+// Grid
+const (
+	GridCellWidth  = 80.0
+	GridCellHeight = 80.0
+)
